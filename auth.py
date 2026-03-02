@@ -5,8 +5,9 @@ Uses Flask's session (server-side cookie) instead of Streamlit session_state.
 import logging
 from functools import wraps
 from flask import session, redirect, url_for, flash
-from passlib.context import CryptContext
+import bcrypt as _bcrypt
 from database import get_db, User, Patient, AuditLog
+
 
 log  = logging.getLogger(__name__)
 _pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -14,12 +15,12 @@ _pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # ── Password helpers ──────────────────────────────────────────────────────────
 
-def hash_password(plain: str) -> str:
-    return _pwd.hash(plain)
 
+def hash_password(plain: str) -> str:
+    return _bcrypt.hashpw(plain.encode("utf-8"), _bcrypt.gensalt(rounds=12)).decode("utf-8")
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return _pwd.verify(plain, hashed)
+    return _bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
 
 
 # ── Login / Register ──────────────────────────────────────────────────────────
