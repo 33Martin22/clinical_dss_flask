@@ -5,7 +5,8 @@ psycopg2-binary>=2.9.9
 passlib[bcrypt]>=1.7.4
 bcrypt>=4.1.0
 python-dotenv>=1.0.0
-tensorflow>=2.15.0
+tf-keras
+tensorflow-cpu
 shap>=0.44.0
 reportlab>=4.1.0
 pandas>=2.2.0
