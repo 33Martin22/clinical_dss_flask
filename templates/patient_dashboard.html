@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}My Dashboard — ClinicalAI DSS{% endblock %}
+{% block content %}
+
+<div class="page-header" style="display:flex;align-items:center;justify-content:space-between">
+  <div>
+    <h1 class="page-title">My Health Dashboard</h1>
+    <p class="page-sub">{{ current_user.name }} · Age: {{ pat.age or 'N/A' }} · {{ pat.gender or 'N/A' }}</p>
+  </div>
+  <a href="{{ url_for('patient.assessment') }}" class="btn btn-primary">+ New Assessment</a>
+</div>
+
+<!-- KPI row -->
+<div class="kpi-grid">
+  <div class="kpi-card" style="--kpi-color:#3b82f6">
+    <div class="kpi-value">{{ total }}</div>
+    <div class="kpi-label">Total Assessments</div>
+  </div>
+  <div class="kpi-card" style="--kpi-color:#f59e0b">
+    <div class="kpi-value">{{ pending }}</div>
+    <div class="kpi-label">Awaiting Review</div>
+  </div>
+  <div class="kpi-card" style="--kpi-color:#10b981">
+    <div class="kpi-value">{{ risk_counts.Low }}</div>
+    <div class="kpi-label">Low Risk</div>
+  </div>
+  <div class="kpi-card" style="--kpi-color:#ef4444">
+    <div class="kpi-value">{{ risk_counts.High }}</div>
+    <div class="kpi-label">High Risk</div>
+  </div>
+</div>
+
+{% if latest %}
+<div class="grid-2">
+  <!-- Latest assessment -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Latest Assessment #{{ latest.id }}</div>
+      <span class="risk-badge risk-{{ latest.final_risk }}">
+        {{ '🚨' if latest.final_risk=='High' else '⚠️' if latest.final_risk=='Medium' else '✅' }}
+        {{ latest.final_risk }}
+      </span>
+    </div>
+
+    <div class="risk-alert risk-alert-{{ latest.final_risk }}">
+      <div>
+        <div class="risk-alert-title">
+          {{ '🚨 URGENT' if latest.final_risk=='High' else '⚠️ Attention Required' if latest.final_risk=='Medium' else '✅ All Good' }}
+        </div>
+        <div class="risk-alert-text">{{ latest.recommendation }}</div>
+      </div>
+    </div>
+
+    <div class="metric-row">
+      <div class="metric">
+        <div class="metric-val" style="color:var(--accent)">{{ latest.rule_score }}</div>
+        <div class="metric-lbl">NEWS2 Score</div>
+      </div>
+      <div class="metric">
+        <div class="metric-val" style="color:var(--accent-2)">{{ latest.ml_prediction }}</div>
+        <div class="metric-lbl">AI Prediction</div>
+      </div>
+      <div class="metric">
+        <div class="metric-val mono" style="color:var(--text-muted)">{{ '%.0f%%' | format(latest.ml_probability * 100) }}</div>
+        <div class="metric-lbl">AI Confidence</div>
+      </div>
+    </div>
+
+    <details>
+      <summary>Full Clinical Explanation</summary>
+      <div class="details-body">{{ latest.explanation }}</div>
+    </details>
+
+    {% if notes %}
+      <div style="margin-top:16px">
+        <div class="vitals-section-title">Physician Feedback</div>
+        {% for n in notes %}
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:8px">
+            <div style="font-size:12px;color:var(--accent);font-family:'DM Mono',monospace;margin-bottom:6px">Dr. {{ n.doctor }} · {{ n.date }}</div>
+            <div style="font-size:13px;color:var(--text)">{{ n.note }}</div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p style="font-size:13px;color:var(--text-dim);margin-top:12px">⏳ Awaiting physician review…</p>
+    {% endif %}
+
+    <div style="margin-top:16px">
+      <a href="{{ url_for('patient.download_pdf', assessment_id=latest.id) }}" class="btn btn-ghost btn-sm">
+        📥 Download PDF Report
+      </a>
+    </div>
+
+    <p style="font-size:11px;color:var(--text-dim);margin-top:10px">
+      Submitted {{ latest.created_at }} · Status: {{ latest.status | title }}
+    </p>
+  </div>
+
+  <!-- Vitals radar -->
+  <div>
+    <div class="chart-box" style="margin-bottom:16px">
+      <div class="chart-title">Vitals Radar</div>
+      <div id="radarChart"></div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">Risk Trend</div>
+      <div id="trendChart"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts row -->
+<div class="grid-2">
+  <div class="chart-box">
+    <div class="chart-title">Risk Distribution</div>
+    <div id="pieChart"></div>
+  </div>
+</div>
+
+<!-- History table -->
+{% if history | length > 1 %}
+<div class="card" style="margin-top:4px">
+  <div class="card-header"><div class="card-title">Assessment History</div></div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>#</th><th>Date</th><th>Risk</th><th>NEWS2</th><th>AI</th><th>Status</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for a in history %}
+        <tr>
+          <td class="mono">{{ a.id }}</td>
+          <td>{{ a.created_at }}</td>
+          <td><span class="risk-badge risk-{{ a.final_risk }}">{{ a.final_risk }}</span></td>
+          <td class="mono">{{ a.rule_score }}</td>
+          <td class="mono">{{ a.ml_prediction }}</td>
+          <td><span style="font-size:12px;color:{% if a.status=='reviewed' %}var(--low){% else %}var(--medium){% endif %}">
+            {{ a.status | title }}
+          </span></td>
+          <td><a href="{{ url_for('patient.download_pdf', assessment_id=a.id) }}" class="btn btn-ghost btn-sm">PDF</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% else %}
+<div style="text-align:center;padding:80px 20px">
+  <div style="font-size:48px;margin-bottom:16px">📋</div>
+  <h2 style="font-family:'Playfair Display',serif;margin-bottom:8px">No assessments yet</h2>
+  <p style="color:var(--text-muted);margin-bottom:24px">Submit your first assessment to see your health dashboard.</p>
+  <a href="{{ url_for('patient.assessment') }}" class="btn btn-primary">Start Assessment →</a>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+{% if latest %}
+riskTrendChart('trendChart', {{ trend_dates|safe }}, {{ trend_risks|safe }});
+pieChart('pieChart', {{ risk_counts | tojson }});
+radarChart('radarChart', {
+  rr: {{ latest.respiratory_rate }},
+  spo2: {{ latest.oxygen_saturation }},
+  sbp: {{ latest.systolic_bp }},
+  hr: {{ latest.heart_rate }},
+  temp: {{ latest.temperature }}
+});
+{% endif %}
+</script>
+{% endblock %}

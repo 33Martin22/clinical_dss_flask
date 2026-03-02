@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}Doctor Dashboard — ClinicalAI DSS{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1 class="page-title">Doctor Dashboard</h1>
+  <p class="page-sub">Dr. {{ current_user.name }} · {{ pending|length }} pending review{{ 's' if pending|length != 1 }}</p>
+</div>
+
+<div class="kpi-grid">
+  <div class="kpi-card" style="--kpi-color:#3b82f6">
+    <div class="kpi-value">{{ patients|length }}</div><div class="kpi-label">Total Patients</div>
+  </div>
+  <div class="kpi-card" style="--kpi-color:#f59e0b">
+    <div class="kpi-value">{{ pending|length }}</div><div class="kpi-label">Pending Reviews</div>
+  </div>
+  <div class="kpi-card" style="--kpi-color:#ef4444">
+    <div class="kpi-value">{{ risk_counts.High }}</div><div class="kpi-label">High Risk</div>
+  </div>
+  <div class="kpi-card" style="--kpi-color:#06b6d4">
+    <div class="kpi-value">{{ total_assessments }}</div><div class="kpi-label">Total Assessments</div>
+  </div>
+</div>
+
+<div class="grid-2" style="margin-bottom:28px">
+  <div class="chart-box"><div class="chart-title">Risk Distribution</div><div id="pieChart"></div></div>
+</div>
+
+<!-- Pending reviews -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">⏳ Pending Reviews</div>
+    <span class="risk-badge risk-Medium">{{ pending|length }} pending</span>
+  </div>
+
+  {% if not pending %}
+    <div style="text-align:center;padding:40px;color:var(--low)">✅ All assessments have been reviewed.</div>
+  {% else %}
+    {% for a in pending %}
+    <div class="review-card">
+      <div class="review-card-header">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span class="risk-badge risk-{{ a.final_risk }}">{{ a.final_risk }}</span>
+          <span style="font-weight:600">{{ a.patient_name }}</span>
+          <span style="font-size:12px;color:var(--text-dim)">{{ a.created_at }}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span class="mono" style="font-size:12px;color:var(--text-muted)">NEWS2: {{ a.rule_score }}</span>
+          <span style="color:var(--text-dim)">▾</span>
+        </div>
+      </div>
+      <div class="review-card-body">
+        <div class="grid-2">
+          <div>
+            <div class="vitals-section-title" style="margin-bottom:12px">Vital Signs</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div class="kpi-card" style="--kpi-color:var(--accent);padding:12px">
+                <div class="kpi-value" style="font-size:18px">{{ a.respiratory_rate }}</div>
+                <div class="kpi-label">Resp Rate /min</div>
+              </div>
+              <div class="kpi-card" style="--kpi-color:var(--accent-2);padding:12px">
+                <div class="kpi-value" style="font-size:18px">{{ a.oxygen_saturation }}%</div>
+                <div class="kpi-label">SpO₂</div>
+              </div>
+              <div class="kpi-card" style="--kpi-color:var(--text-muted);padding:12px">
+                <div class="kpi-value" style="font-size:18px">{{ a.systolic_bp }}</div>
+                <div class="kpi-label">Sys BP mmHg</div>
+              </div>
+              <div class="kpi-card" style="--kpi-color:var(--text-muted);padding:12px">
+                <div class="kpi-value" style="font-size:18px">{{ a.heart_rate }}</div>
+                <div class="kpi-label">Heart Rate bpm</div>
+              </div>
+              <div class="kpi-card" style="--kpi-color:var(--text-muted);padding:12px">
+                <div class="kpi-value" style="font-size:18px">{{ a.temperature }}°C</div>
+                <div class="kpi-label">Temperature</div>
+              </div>
+              <div class="kpi-card" style="--kpi-color:var(--text-muted);padding:12px">
+                <div class="kpi-value" style="font-size:18px">{{ a.consciousness }}</div>
+                <div class="kpi-label">Consciousness</div>
+              </div>
+            </div>
+            <div class="risk-alert risk-alert-{{ a.final_risk }}" style="margin-top:12px">
+              <div class="risk-alert-text">{{ a.recommendation }}</div>
+            </div>
+            <details style="margin-top:10px">
+              <summary>AI Explanation</summary>
+              <div class="details-body">{{ a.explanation }}</div>
+            </details>
+          </div>
+          <div>
+            <div class="vitals-section-title" style="margin-bottom:12px">Add Clinical Note</div>
+            <form method="POST" action="{{ url_for('doctor.review', assessment_id=a.id) }}">
+              <div class="form-group">
+                <textarea name="note" class="form-control" rows="6"
+                          placeholder="Enter your clinical observations, diagnosis, and recommendations…"
+                          required style="resize:vertical"></textarea>
+              </div>
+              <button type="submit" class="btn btn-success btn-block">
+                ✅ Submit Note &amp; Mark Reviewed
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  {% endif %}
+</div>
+
+<!-- All patients -->
+<div class="card" style="margin-top:20px">
+  <div class="card-header"><div class="card-title">👥 All Patients</div></div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Name</th><th>Age</th><th>Gender</th><th>Conditions</th><th>Latest Risk</th><th>Total</th></tr>
+      </thead>
+      <tbody>
+        {% for p in patients %}
+        <tr>
+          <td style="font-weight:600">{{ p.name }}</td>
+          <td>{{ p.age or '—' }}</td>
+          <td>{{ p.gender or '—' }}</td>
+          <td style="color:var(--text-muted);font-size:12px">{{ p.conditions or 'None' }}</td>
+          <td>
+            {% if p.latest_risk != 'No data' %}
+              <span class="risk-badge risk-{{ p.latest_risk }}">{{ p.latest_risk }}</span>
+            {% else %}
+              <span style="color:var(--text-dim);font-size:12px">No data</span>
+            {% endif %}
+          </td>
+          <td class="mono">{{ p.total }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>pieChart('pieChart', {{ risk_counts | tojson }});</script>
+{% endblock %}

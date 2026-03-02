@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Admin Panel — ClinicalAI DSS{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1 class="page-title">Admin Panel</h1>
+  <p class="page-sub">System Administrator · {{ users|length }} total users</p>
+</div>
+
+<div class="kpi-grid-5">
+  <div class="kpi-card" style="--kpi-color:#3b82f6">
+    <div class="kpi-value">{{ users|length }}</div><div class="kpi-label">Total Users</div>
+  </div>
+  <div class="kpi-card" style="--kpi-color:#06b6d4">
+    <div class="kpi-value">{{ patients_count }}</div><div class="kpi-label">Patients</div>
+  </div>
+  <div class="kpi-card" style="--kpi-color:#10b981">
+    <div class="kpi-value">{{ doctors_count }}</div><div class="kpi-label">Doctors</div>
+  </div>
+  <div class="kpi-card" style="--kpi-color:#7c3aed">
+    <div class="kpi-value">{{ total_assessments }}</div><div class="kpi-label">Assessments</div>
+  </div>
+  <div class="kpi-card" style="--kpi-color:#ef4444">
+    <div class="kpi-value">{{ risk_counts.High }}</div><div class="kpi-label">High Risk</div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="chart-box"><div class="chart-title">Risk Distribution</div><div id="pieChart"></div></div>
+</div>
+
+<!-- User management -->
+<div class="card" style="margin-bottom:20px">
+  <div class="card-header"><div class="card-title">👥 User Management</div></div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Action</th></tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td style="font-weight:600">{{ u.name }}</td>
+          <td class="mono" style="font-size:12px">{{ u.email }}</td>
+          <td><span class="user-role role-{{ u.role }}">{{ u.role | title }}</span></td>
+          <td>
+            <span style="color:{% if u.is_active %}var(--low){% else %}var(--high){% endif %};font-size:12px;font-weight:600">
+              {{ '✅ Active' if u.is_active else '❌ Inactive' }}
+            </span>
+          </td>
+          <td style="font-size:12px;color:var(--text-muted)">{{ u.created_at }}</td>
+          <td>
+            {% if u.id != current_user.id %}
+            <form method="POST" action="{{ url_for('admin.toggle_user', user_id=u.id) }}" style="display:inline">
+              <button type="submit" class="btn btn-sm {% if u.is_active %}btn-danger{% else %}btn-success{% endif %}">
+                {{ '🔒 Deactivate' if u.is_active else '🔓 Activate' }}
+              </button>
+            </form>
+            {% else %}
+            <span style="font-size:11px;color:var(--text-dim)">(You)</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Audit logs -->
+<div class="card">
+  <div class="card-header"><div class="card-title">📋 Audit Logs (last 100)</div></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Time</th><th>User</th><th>Role</th><th>Action</th><th>Details</th></tr></thead>
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          <td class="mono" style="font-size:11px;white-space:nowrap">{{ log.time }}</td>
+          <td style="font-size:13px">{{ log.user }}</td>
+          <td><span style="font-size:11px;color:var(--text-muted)">{{ log.role }}</span></td>
+          <td class="mono" style="font-size:12px;color:var(--accent)">{{ log.action }}</td>
+          <td style="font-size:12px;color:var(--text-muted)">{{ log.details }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>pieChart('pieChart', {{ risk_counts | tojson }});</script>
+{% endblock %}

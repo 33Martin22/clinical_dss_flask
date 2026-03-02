@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}ClinicalAI DSS — AI-Powered Health Risk Assessment{% endblock %}
+{% block content %}
+
+<div class="hero">
+  <div class="hero-eyebrow">Clinical Decision Support System</div>
+  <h1 class="hero-title">
+    Intelligent Risk Assessment<br>
+    <span>Powered by Hybrid AI</span>
+  </h1>
+  <p class="hero-sub">
+    Combining evidence-based NEWS2 clinical scoring with a trained Keras deep neural
+    network to deliver transparent, explainable health risk predictions.
+  </p>
+  <div class="hero-btns">
+    <a href="{{ url_for('auth.register') }}" class="btn btn-primary" style="font-size:16px;padding:14px 32px">
+      Get Started →
+    </a>
+    <a href="{{ url_for('auth.login') }}" class="btn btn-ghost" style="font-size:16px;padding:14px 32px">
+      Sign In
+    </a>
+  </div>
+</div>
+
+<div class="stats-bar">
+  <div class="stat-item"><div class="stat-val">11</div><div class="stat-lbl">Model Features</div></div>
+  <div class="stat-item"><div class="stat-val">3</div><div class="stat-lbl">Risk Classes</div></div>
+  <div class="stat-item"><div class="stat-val">NEWS2</div><div class="stat-lbl">Clinical Standard</div></div>
+  <div class="stat-item"><div class="stat-val">SHAP</div><div class="stat-lbl">Explainability</div></div>
+</div>
+
+<div class="feature-grid">
+  <div class="feature-card">
+    <span class="feature-icon">🧠</span>
+    <div class="feature-title">Keras Deep Neural Network</div>
+    <div class="feature-desc">Dense(64→32→16→3) MLP with Dropout regularisation, trained on clinical vitals data with softmax output for 3-class risk classification.</div>
+  </div>
+  <div class="feature-card">
+    <span class="feature-icon">⚖️</span>
+    <div class="feature-title">Hybrid Rule + AI Engine</div>
+    <div class="feature-desc">NEWS2 clinical rules combined with Keras DNN. When they disagree, the higher risk is always adopted — the medically conservative choice.</div>
+  </div>
+  <div class="feature-card">
+    <span class="feature-icon">🔍</span>
+    <div class="feature-title">SHAP Explainability</div>
+    <div class="feature-desc">Every assessment includes SHAP GradientExplainer feature importances, making every AI decision fully transparent and interpretable.</div>
+  </div>
+  <div class="feature-card">
+    <span class="feature-icon">🩺</span>
+    <div class="feature-title">Mandatory Doctor Review</div>
+    <div class="feature-desc">Every patient assessment is automatically queued for physician review. No patient sees their result without a clinician in the loop.</div>
+  </div>
+  <div class="feature-card">
+    <span class="feature-icon">📄</span>
+    <div class="feature-title">Clinical PDF Reports</div>
+    <div class="feature-desc">Professional ReportLab PDFs containing vital signs, risk analysis, AI explanation, SHAP importances, and physician notes.</div>
+  </div>
+  <div class="feature-card">
+    <span class="feature-icon">🔒</span>
+    <div class="feature-title">Secure & Role-Based</div>
+    <div class="feature-desc">Bcrypt hashing, Flask session auth, role-protected routes (patient/doctor/admin), persistent PostgreSQL, and full audit logging.</div>
+  </div>
+</div>
+
+<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:32px;margin-top:32px">
+  <h2 style="font-family:'Playfair Display',serif;font-size:22px;margin-bottom:16px">Demo Credentials</h2>
+  <table>
+    <thead><tr><th>Role</th><th>Email</th><th>Password</th></tr></thead>
+    <tbody>
+      <tr><td><span class="role-admin user-role">Admin</span></td><td class="mono">admin@clinic.com</td><td class="mono">Admin@1234</td></tr>
+      <tr><td><span class="role-doctor user-role">Doctor</span></td><td class="mono">doctor@clinic.com</td><td class="mono">Doctor@1234</td></tr>
+      <tr><td><span class="role-patient user-role">Patient</span></td><td colspan="2" style="color:var(--text-muted)">Register a new account via the form</td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:12px;color:var(--text-dim);margin-top:12px">⚠️ Academic demonstration only. Do not use real patient data.</p>
+</div>
+
+{% endblock %}

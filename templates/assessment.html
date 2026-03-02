@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block title %}New Assessment — ClinicalAI DSS{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1 class="page-title">New Health Assessment</h1>
+  <p class="page-sub">Enter your current vital signs. Your result will be forwarded to your doctor for mandatory review.</p>
+</div>
+
+{% if not result %}
+<!-- ── Vitals Form ───────────────────────────────────────────────── -->
+{% if errors %}
+  {% for e in errors %}<div class="error-box">{{ e }}</div>{% endfor %}
+{% endif %}
+{% if warnings %}
+  <div style="background:var(--medium-bg);border:1px solid rgba(245,158,11,.3);border-radius:var(--radius);padding:14px 18px;margin-bottom:16px">
+    <div style="font-weight:600;color:var(--medium);margin-bottom:6px">⚠️ Clinical Warnings — please verify these readings:</div>
+    {% for w in warnings %}<div style="font-size:13px;color:var(--text-muted)">• {{ w }}</div>{% endfor %}
+  </div>
+{% endif %}
+
+<div class="card">
+  <details style="border:none;margin-bottom:20px" open>
+    <summary style="color:var(--accent);font-size:13px;font-weight:600">ℹ️ How to measure your vitals correctly</summary>
+    <div class="details-body">
+      <strong>Respiratory Rate</strong> — Count chest rises for exactly 60 seconds (normal: 12–20/min)<br>
+      <strong>SpO₂</strong> — Pulse oximeter fingertip clip (normal: 95–100%)<br>
+      <strong>Systolic BP</strong> — Top number on blood pressure monitor (normal: 90–120 mmHg)<br>
+      <strong>Heart Rate</strong> — Pulse oximeter or count wrist pulse for 60s (normal: 60–100 bpm)<br>
+      <strong>Temperature</strong> — Oral thermometer in °C (normal: 36.0–37.5 °C)<br>
+      <strong>ACVPU</strong> — A=Alert, C=Confused, V=Voice only, P=Pain only, U=Unresponsive
+    </div>
+  </details>
+
+  <form method="POST" action="{{ url_for('patient.assessment') }}">
+    <div class="vitals-section">
+      <div class="vitals-section-title">🫁 Respiratory &amp; Oxygen Status</div>
+      <div class="vitals-grid">
+        <div class="form-group">
+          <label class="form-label">Respiratory Rate (breaths/min)</label>
+          <input type="number" name="respiratory_rate" class="form-control" value="18" min="1" max="100" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Oxygen Saturation — SpO₂ (%)</label>
+          <input type="number" name="oxygen_saturation" class="form-control" value="98" min="50" max="100" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">O₂ Measurement Scale</label>
+          <select name="o2_scale" class="form-control">
+            <option value="1">Scale 1 — Standard patients</option>
+            <option value="2">Scale 2 — COPD / Hypercapnic</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-check">
+        <input type="checkbox" name="on_oxygen" id="onOxygen">
+        <label for="onOxygen" style="font-size:14px;color:var(--text)">I am currently using supplemental oxygen (nasal cannula, mask, etc.)</label>
+      </div>
+    </div>
+
+    <div class="vitals-section">
+      <div class="vitals-section-title">💓 Cardiovascular</div>
+      <div class="vitals-grid-2">
+        <div class="form-group">
+          <label class="form-label">Systolic Blood Pressure (mmHg)</label>
+          <input type="number" name="systolic_bp" class="form-control" value="120" min="50" max="300" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Heart Rate (bpm)</label>
+          <input type="number" name="heart_rate" class="form-control" value="75" min="20" max="250" required>
+        </div>
+      </div>
+    </div>
+
+    <div class="vitals-section">
+      <div class="vitals-section-title">🌡️ Temperature &amp; Consciousness</div>
+      <div class="vitals-grid-2">
+        <div class="form-group">
+          <label class="form-label">Body Temperature (°C)</label>
+          <input type="number" name="temperature" class="form-control" value="37.0" min="30" max="44" step="0.1" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Level of Consciousness (ACVPU)</label>
+          <select name="consciousness" class="form-control">
+            <option value="A">A — Alert: fully awake and oriented</option>
+            <option value="C">C — Confused: awake but disoriented</option>
+            <option value="V">V — Voice: responds only to voice</option>
+            <option value="P">P — Pain: responds only to painful stimulus</option>
+            <option value="U">U — Unresponsive: no response</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--medium-bg);border:1px solid rgba(245,158,11,.3);border-radius:var(--radius);padding:14px;margin-bottom:20px;font-size:13px;color:var(--text-muted)">
+      ⚠️ By submitting you confirm all readings are accurate. This assessment will be automatically forwarded to your doctor for mandatory review.
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-block" style="font-size:15px;padding:14px">
+      🚀 Submit for AI Analysis
+    </button>
+  </form>
+</div>
+
+{% else %}
+<!-- ── Results ─────────────────────────────────────────────────────── -->
+<div class="risk-alert risk-alert-{{ result.final_risk }}" style="margin-bottom:24px">
+  <div>
+    <div class="risk-alert-title" style="font-size:18px">
+      {{ '🚨 HIGH RISK — Urgent Attention Required' if result.final_risk=='High'
+         else '⚠️ MEDIUM RISK — Clinical Attention Advised' if result.final_risk=='Medium'
+         else '✅ LOW RISK — Routine Monitoring' }}
+    </div>
+    <div class="risk-alert-text">{{ result.recommendation }}</div>
+  </div>
+</div>
+
+<div class="kpi-grid">
+  <div class="kpi-card" style="--kpi-color:var(--accent)">
+    <div class="kpi-value">{{ result.rule_score }}</div>
+    <div class="kpi-label">NEWS2 Score</div>
+  </div>
+  <div class="kpi-card" style="--kpi-color:var(--accent-2)">
+    <div class="kpi-value">{{ result.ml_prediction }}</div>
+    <div class="kpi-label">AI Prediction</div>
+  </div>
+  <div class="kpi-card" style="--kpi-color:var(--text-muted)">
+    <div class="kpi-value mono">{{ '%.0f%%'|format(result.ml_probability*100) }}</div>
+    <div class="kpi-label">AI Confidence</div>
+  </div>
+  <div class="kpi-card" style="--kpi-color:{% if result.final_risk=='High' %}#ef4444{% elif result.final_risk=='Medium' %}#f59e0b{% else %}#10b981{% endif %}">
+    <div class="kpi-value">{{ result.final_risk }}</div>
+    <div class="kpi-label">Final Risk</div>
+  </div>
+</div>
+
+{% if result.ml_class_probs %}
+<div class="grid-2">
+  <div class="chart-box">
+    <div class="chart-title">AI Class Probabilities</div>
+    <div id="probChart"></div>
+  </div>
+  {% if result.shap_features %}
+  <div class="chart-box">
+    <div class="chart-title">SHAP Feature Importance</div>
+    <div id="shapChart"></div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-title" style="margin-bottom:12px">Clinical Analysis</div>
+  <div class="explanation-box">{{ result.explanation }}</div>
+</div>
+
+<div style="background:var(--accent-glow);border:1px solid rgba(59,130,246,.3);border-radius:var(--radius);padding:14px 18px;margin:16px 0;font-size:13px;color:var(--accent)">
+  ✅ Assessment #{{ result.assessment_id }} saved and forwarded to your doctor for review.
+</div>
+
+<div style="display:flex;gap:12px">
+  <a href="{{ url_for('patient.dashboard') }}" class="btn btn-primary">📊 Go to Dashboard</a>
+  <a href="{{ url_for('patient.assessment') }}" class="btn btn-ghost">📋 New Assessment</a>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+{% if result and result.ml_class_probs %}
+<script>
+probBar('probChart', {{ result.ml_class_probs | tojson }});
+{% if result.shap_features %}
+shapBar('shapChart', {{ result.shap_features | tojson }});
+{% endif %}
+</script>
+{% endif %}
+{% endblock %}
