@@ -7,7 +7,6 @@ Render.com: gunicorn app:app
 
 from flask import Flask, render_template, redirect, url_for
 from datetime import timedelta
-
 from config   import SECRET_KEY, DEBUG
 from database import init_db
 from auth     import seed_defaults, get_current_user
@@ -27,28 +26,24 @@ app.register_blueprint(patient_bp)
 app.register_blueprint(doctor_bp)
 app.register_blueprint(admin_bp)
 
-
-# ── Startup tasks (Run only on first request) ────────────────────────────────
-@app.before_first_request
-def startup_tasks():
-    """
-    Initialize the database and seed default accounts
-    AFTER the app starts and binds to the port.
-    """
-    init_db()
-    seed_defaults()
-
+# ── Flag to ensure DB init & seeding runs only once ─────────────────────────
+db_initialized = False
 
 # ── Main route ────────────────────────────────────────────────────────────────
 @app.route("/")
 def landing():
+    global db_initialized
+    # Initialize DB and seed defaults only once
+    if not db_initialized:
+        init_db()
+        seed_defaults()
+        db_initialized = True
+
     user = get_current_user()
     return render_template("landing.html", user=user)
 
-
 # Blueprint alias for url_for("main.landing")
 app.add_url_rule("/", endpoint="main.landing", view_func=landing)
-
 
 # ── Error handlers ────────────────────────────────────────────────────────────
 @app.errorhandler(404)
@@ -56,18 +51,15 @@ def not_found(e):
     return render_template("error.html", code=404,
                            message="Page not found."), 404
 
-
 @app.errorhandler(500)
 def server_error(e):
     return render_template("error.html", code=500,
                            message="Internal server error."), 500
 
-
 # ── Context processor — injects user into every template ──────────────────────
 @app.context_processor
 def inject_user():
     return {"current_user": get_current_user()}
-
 
 # ── Run locally ──────────────────────────────────────────────────────────────
 if __name__ == "__main__":
