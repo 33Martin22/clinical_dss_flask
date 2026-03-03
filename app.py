@@ -4,6 +4,7 @@ app.py — Flask application entry point.
 Local:      python app.py   OR   flask run
 Render.com: gunicorn app:app
 """
+
 from flask import Flask, render_template, redirect, url_for
 from datetime import timedelta
 
@@ -17,7 +18,7 @@ from routes.doctor_routes  import doctor_bp
 from routes.admin_routes   import admin_bp
 
 app = Flask(__name__)
-app.secret_key              = SECRET_KEY
+app.secret_key = SECRET_KEY
 app.permanent_session_lifetime = timedelta(hours=8)
 
 # Register blueprints
@@ -27,8 +28,13 @@ app.register_blueprint(doctor_bp)
 app.register_blueprint(admin_bp)
 
 
-# ── Startup ───────────────────────────────────────────────────────────────────
-with app.app_context():
+# ── Startup tasks (Run only on first request) ────────────────────────────────
+@app.before_first_request
+def startup_tasks():
+    """
+    Initialize the database and seed default accounts
+    AFTER the app starts and binds to the port.
+    """
     init_db()
     seed_defaults()
 
@@ -63,5 +69,8 @@ def inject_user():
     return {"current_user": get_current_user()}
 
 
+# ── Run locally ──────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    app.run(debug=DEBUG, host="0.0.0.0", port=5000)
+    import os
+    port = int(os.environ.get("PORT", 5000))
+    app.run(debug=DEBUG, host="0.0.0.0", port=port)
