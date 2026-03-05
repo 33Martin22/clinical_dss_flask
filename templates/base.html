@@ -7,14 +7,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
   <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-
 {% if current_user %}
 <!-- ── Authenticated layout with sidebar ──────────────────────────── -->
 <div class="app-shell">
-
   <aside class="sidebar">
     <div class="sidebar-brand">
       <span class="brand-icon">⚕</span>
@@ -23,7 +21,6 @@
         <div class="brand-sub">Decision Support v3.0</div>
       </div>
     </div>
-
     <div class="sidebar-user">
       <div class="user-avatar">{{ current_user.name[0].upper() }}</div>
       <div class="user-info">
@@ -31,7 +28,6 @@
         <div class="user-role role-{{ current_user.role }}">{{ current_user.role | title }}</div>
       </div>
     </div>
-
     <nav class="sidebar-nav">
       {% if current_user.role == 'patient' %}
         <a href="{{ url_for('patient.dashboard') }}" class="nav-item {% if request.endpoint == 'patient.dashboard' %}active{% endif %}">
@@ -53,14 +49,12 @@
         </a>
       {% endif %}
     </nav>
-
     <div class="sidebar-footer">
       <a href="{{ url_for('auth.logout') }}" class="logout-btn">
         <span>🚪</span> Sign Out
       </a>
     </div>
   </aside>
-
   <main class="main-content">
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% for cat, msg in messages %}
@@ -69,9 +63,7 @@
     {% endwith %}
     {% block content %}{% endblock %}
   </main>
-
 </div>
-
 {% else %}
 <!-- ── Public layout ──────────────────────────────────────────────── -->
 <header class="public-header">
@@ -85,7 +77,6 @@
     </nav>
   </div>
 </header>
-
 <main class="public-main">
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% for cat, msg in messages %}
@@ -94,10 +85,8 @@
   {% endwith %}
   {% block public_content %}{% endblock %}
 </main>
-
 {% endif %}
-
-<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script src="{{ url_for('static', filename='charts.js') }}"></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>
